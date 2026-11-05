@@ -1,0 +1,135 @@
+- name: Apply baseline configuration to every MediTrack host
+  hosts: meditrack
+  become: true
+  tags: baseline
+  tasks:
+    - name: Refresh the APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install baseline utility packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+    - name: Configure the server timezone
+      community.general.timezone:
+        name: "{{ server_timezone }}"
+
+
+- name: Configure the web tier with Nginx
+  hosts: webservers
+  become: true
+  tags: web
+  tasks:
+    - name: Install the Nginx web server
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Create the MediTrack document root
+      ansible.builtin.file:
+        path: "{{ web_root }}"
+        state: directory
+        owner: "{{ nginx_user }}"
+        group: "{{ nginx_user }}"
+        mode: "0755"
+
+    - name: Render the portal landing page
+      ansible.builtin.template:
+        src: templates/index.html.j2
+        dest: "{{ web_root }}/index.html"
+        owner: "{{ nginx_user }}"
+        group: "{{ nginx_user }}"
+        mode: "0644"
+
+    - name: Deploy the MediTrack Nginx site configuration
+      ansible.builtin.template:
+        src: templates/meditrack.conf.j2
+        dest: "/etc/nginx/sites-available/{{ site_name }}"
+        mode: "0644"
+      notify: Reload Nginx
+
+    - name: Enable the MediTrack site
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/{{ site_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ site_name }}"
+        state: link
+      notify: Reload Nginx
+
+    - name: Remove the default Nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload Nginx
+
+    - name: Make sure Nginx is running and starts on boot
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Confirm the portal answers with HTTP 200
+      ansible.builtin.uri:
+        url: "http://localhost:{{ nginx_port }}"
+        status_code: 200
+      register: portal_check
+
+    - name: Report the portal status
+      ansible.builtin.debug:
+        msg: "{{ app_name }} portal live on {{ inventory_hostname }} - HTTP {{ portal_check.status }}"
+
+  handlers:
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+
+
+- name: Configure the data tier with MariaDB
+  hosts: dbservers
+  become: true
+  tags: db
+  tasks:
+    - name: Install MariaDB server and the Python MySQL driver
+      ansible.builtin.apt:
+        name:
+          - mariadb-server
+          - python3-pymysql
+        state: present
+
+    - name: Make sure MariaDB is running and starts on boot
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: true
+
+    - name: Create the MediTrack application database
+      community.mysql.mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Create the MediTrack application database user
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        host: "%"
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+      no_log: true
+
+    - name: Remove anonymous database users (hardening)
+      community.mysql.mysql_user:
+        name: ""
+        host_all: true
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Drop the default test database (hardening)
+      community.mysql.mysql_db:
+        name: test
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock

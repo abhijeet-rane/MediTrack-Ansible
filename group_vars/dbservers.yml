@@ -1,0 +1,4 @@
+db_engine: mariadb
+db_name: meditrack_db
+db_user: meditrack_app
+db_password: "MediTrack@2026"

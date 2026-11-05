@@ -1,0 +1,14 @@
+# Nginx site configuration for the MediTrack portal
+server {
+    listen {{ nginx_port }};
+    server_name _;
+    root {{ web_root }};
+    index index.html;
+
+    access_log /var/log/nginx/{{ site_name }}_access.log;
+    error_log  /var/log/nginx/{{ site_name }}_error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}

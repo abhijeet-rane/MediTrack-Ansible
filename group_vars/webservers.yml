@@ -1,0 +1,4 @@
+nginx_port: 8080
+web_root: /var/www/meditrack
+nginx_user: www-data
+site_name: meditrack

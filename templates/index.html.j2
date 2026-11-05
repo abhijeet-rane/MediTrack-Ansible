@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ app_name }} - {{ app_tagline }}</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f7f6;
+      color: #1f3b33;
+      margin: 0;
+      padding: 60px 20px;
+    }
+    .card {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+    h1 { color: #0f6e57; margin-top: 0; }
+    .tag { color: #4a6e66; font-size: 18px; }
+    .meta {
+      margin-top: 24px;
+      border-top: 1px solid #e3e8e6;
+      padding-top: 18px;
+      font-size: 14px;
+    }
+    .meta span { display: inline-block; margin-right: 24px; }
+    .ok { color: #0f9d76; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ app_name }}</h1>
+    <p class="tag">{{ app_tagline }}</p>
+    <p>This portal is provisioned and configured automatically with
+       <b>Ansible</b> as part of the MediTrack DevOps workflow.</p>
+    <div class="meta">
+      <span>Environment: <b>{{ app_env }}</b></span>
+      <span>Host: <b>{{ inventory_hostname }}</b></span>
+    </div>
+    <div class="meta">
+      <span>Operating system: {{ ansible_facts['distribution'] }}
+            {{ ansible_facts['distribution_version'] }}</span>
+      <span>Status: <span class="ok">healthy</span></span>
+    </div>
+  </div>
+</body>
+</html>

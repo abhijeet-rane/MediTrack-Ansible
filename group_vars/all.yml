@@ -1,0 +1,14 @@
+# Variables shared by every host in the MediTrack group
+app_name: MediTrack
+app_tagline: Clinic Appointment & Patient Records Portal
+app_env: development
+server_timezone: Asia/Kolkata
+
+# Baseline packages installed on all nodes
+common_packages:
+  - git
+  - curl
+  - wget
+  - nano
+  - tree
+  - unzip
